@@ -3,6 +3,7 @@ package main
 import (
 	"balancer/server"
 	"encoding/json"
+	logger "balancer/logs"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,6 +47,7 @@ func (lb *LoadBalancer) healthCheck() {
             _, err := http.Get(url)
             if err != nil {
                 log.Printf("Server %s:%d is down\n", server.Host, server.Port)
+				logger.NewLogger().Error(fmt.Sprintf("Server %s:%d is down\n", server.Host, server.Port))
             } else {
                 activeServers = append(activeServers, server)
             }
@@ -71,6 +73,7 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.Get(target)
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error forwarding request to %s:%d\n", server.Host, server.Port))
 		log.Printf("Error forwarding request to %s:%d\n", server.Host, server.Port)
 		http.Error(w, "Server error", http.StatusInternalServerError)
 		return
@@ -79,6 +82,7 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error reading response from %s:%d\n", server.Host, server.Port))
 		http.Error(w, "Server error", http.StatusInternalServerError)
 		return
 	}
@@ -90,18 +94,21 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 func loadConfig(filename string) (*Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error opening config file: %v\n", err))
 		return nil, err
 	}
 	defer file.Close()
 
 	configData, err := ioutil.ReadAll(file)
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error reading config file: %v\n", err))
 		return nil, err
 	}
 
 	var config Config
 	err = json.Unmarshal(configData, &config)
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error unmarshalling config file: %v\n", err))
 		return nil, err
 	}
 
@@ -111,6 +118,7 @@ func loadConfig(filename string) (*Config, error) {
 func main() {
 	config, err := loadConfig("config.json")
 	if err != nil {
+		logger.NewLogger().Error(fmt.Sprintf("Error loading config: %v\n", err))
 		log.Fatalf("Failed to load config: %v\n", err)
 	}
 
