@@ -14,8 +14,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Servers(port string) {
-    mux := http.NewServeMux()   // Har bir server uchun yangi mux yaratamiz
-    mux.HandleFunc("/", handler) // Bitta handler, lekin alohida mux orqali boshqariladi
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", handler)
     log.Println("Starting server on " + port)
     logger.NewLogger().Info("Starting server on " + port)
     log.Fatal(http.ListenAndServe(port, mux))
