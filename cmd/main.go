@@ -49,6 +49,7 @@ func (lb *LoadBalancer) healthCheck() {
                 log.Printf("Server %s:%d is down\n", server.Host, server.Port)
 				logger.NewLogger().Error(fmt.Sprintf("Server %s:%d is down\n", server.Host, server.Port))
             } else {
+				logger.NewLogger().Info(fmt.Sprintf("Server %s:%d is up\n", server.Host, server.Port))
                 activeServers = append(activeServers, server)
             }
         }
@@ -71,6 +72,9 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	server := lb.nextServer()
 	target := fmt.Sprintf("http://%s:%d?server=%d", server.Host, server.Port, lb.current)
 
+	// So'rov yuborishdan oldingi vaqtni olamiz
+	startTime := time.Now()
+
 	resp, err := http.Get(target)
 	if err != nil {
 		logger.NewLogger().Error(fmt.Sprintf("Error forwarding request to %s:%d\n", server.Host, server.Port))
@@ -80,6 +84,9 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	// So'rov tugallangandan keyin vaqtni o'lchaymiz
+	responseTime := time.Since(startTime)
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.NewLogger().Error(fmt.Sprintf("Error reading response from %s:%d\n", server.Host, server.Port))
@@ -87,9 +94,13 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Request from %s served by %s:%d\n", r.RemoteAddr, server.Host, server.Port)
+	// So'rov tugashi vaqti logda yoziladi
+	log.Printf("Request from %s served by %s:%d in %v\n", r.RemoteAddr, server.Host, server.Port, responseTime)
+	logger.NewLogger().Info(fmt.Sprintf("Request served by %s:%d in %v\n", server.Host, server.Port, responseTime))
+
 	w.Write(body)
 }
+
 
 func loadConfig(filename string) (*Config, error) {
 	file, err := os.Open(filename)
