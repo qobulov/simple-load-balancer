@@ -72,7 +72,6 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	server := lb.nextServer()
 	target := fmt.Sprintf("http://%s:%d?server=%d", server.Host, server.Port, lb.current)
 
-	// So'rov yuborishdan oldingi vaqtni olamiz
 	startTime := time.Now()
 
 	resp, err := http.Get(target)
@@ -84,7 +83,6 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// So'rov tugallangandan keyin vaqtni o'lchaymiz
 	responseTime := time.Since(startTime)
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -94,7 +92,6 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// So'rov tugashi vaqti logda yoziladi
 	log.Printf("Request from %s served by %s:%d in %v\n", r.RemoteAddr, server.Host, server.Port, responseTime)
 	logger.NewLogger().Info(fmt.Sprintf("Request served by %s:%d in %v\n", server.Host, server.Port, responseTime))
 
