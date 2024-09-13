@@ -92,10 +92,22 @@ func (lb *LoadBalancer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := map[string]interface{}{
+		"server":        fmt.Sprintf("%s:%d", server.Host, server.Port),
+		"response_time": responseTime.Seconds(),
+		"body":          string(body),        
+	}
+
 	log.Printf("Request from %s served by %s:%d in %v\n", r.RemoteAddr, server.Host, server.Port, responseTime)
 	logger.NewLogger().Info(fmt.Sprintf("Request served by %s:%d in %v\n", server.Host, server.Port, responseTime))
 
-	w.Write(body)
+	w.Header().Set("Content-Type", "application/json")
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Error generating JSON response", http.StatusInternalServerError)
+		return
+	}
+	w.Write(jsonResponse)
 }
 
 
